@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
 
-  <title><![CDATA[xuanchen's Blog]]></title>
-  <link href="http://zxcpro.github.io/atom.xml" rel="self"/>
+  <title><![CDATA[Category: 系统设计 | xuanchen's Blog]]></title>
+  <link href="http://zxcpro.github.io/blog/categories/xi-tong-she-ji/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
   <updated>2015-07-27T23:19:17+08:00</updated>
   <id>http://zxcpro.github.io/</id>
@@ -49,15 +49,6 @@
 <h4>下单秒杀限流</h4>
 
 <p>经过web层的限流，如果100万用户前来参与秒杀，100万次页面展示请求被静态化服务器拦截，100万的查询库存请求被nosql拦截，最后到达数据库只剩下秒杀名额数量级的写请求，当然如果秒杀名额数量较多，下单请求并发仍然很高时，我们还可以使用队列机制，让秒杀请求排队一个个执行，实现方式使用异步消息队列最为自然，在用户秒杀成功后发出短信或者推送通知用户下单。</p>
-]]></content>
-  </entry>
-  
-  <entry>
-    <title type="html"><![CDATA[Hello World]]></title>
-    <link href="http://zxcpro.github.io/blog/2015/01/02/hello-world/"/>
-    <updated>2015-01-02T21:34:40+08:00</updated>
-    <id>http://zxcpro.github.io/blog/2015/01/02/hello-world</id>
-    <content type="html"><![CDATA[<h1>Hello World</h1>
 ]]></content>
   </entry>
   
