@@ -3,7 +3,7 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>xuanchen&#8217;s Blog</title>
+	<title>高并发秒杀系统的设计 - xuanchen&#8217;s Blog</title>
 	<meta name="author" content="xuanchen.zhao">
 
 	
@@ -73,18 +73,9 @@
 	
 		
 	
-	<div id="content" class="inner">
-
-
-    <article class="post">
-	<h2 class="title">
-		
-		<a href="/blog/2015/07/27/gao-bing-fa-miao-sha-xi-tong-de-she-ji/">
-		
-			高并发秒杀系统的设计</a>
-	</h2>
-	<div class="entry-content">
-		<h2>高并发秒杀系统的特点</h2>
+	<div id="content" class="inner"><article class="post">
+	<h2 class="title">高并发秒杀系统的设计</h2>
+	<div class="entry-content"><h2>高并发秒杀系统的特点</h2>
 
 <p>秒杀类活动的特点是参与人数多，商品数量少，而且瞬时流量高，读多写少，秒杀状态变化的实时性要求高。系统需要能够承受住高峰时的流量，进入页面的用户及时看到当前活动的状态，参与秒杀的用户快速获得秒杀结果。同时作为营销类活动，一般是周期性的，也要考虑其可运营性，最好是模板化的，每次上新的活动由运营人员配置发布，不需要开发测试运维人员过多介入。</p>
 
@@ -115,10 +106,7 @@
 <h4>下单秒杀限流</h4>
 
 <p>经过web层的限流，如果100万用户前来参与秒杀，100万次页面展示请求被静态化服务器拦截，100万的查询库存请求被nosql拦截，最后到达数据库只剩下秒杀名额数量级的写请求，当然如果秒杀名额数量较多，下单请求并发仍然很高时，我们还可以使用队列机制，让秒杀请求排队一个个执行，实现方式使用异步消息队列最为自然，在用户秒杀成功后发出短信或者推送通知用户下单。</p>
-
-		
-		
-	</div>
+</div>
 
 
 <div class="meta">
@@ -142,52 +130,38 @@
 </div>
 </article>
 
-
-    <article class="post">
-	<h2 class="title">
+	<div class="share">
+	<div class="addthis_toolbox addthis_default_style ">
 		
-		<a href="/blog/2015/01/02/hello-world/">
 		
-			Hello World</a>
-	</h2>
-	<div class="entry-content">
-		<h1>Hello World</h1>
-
 		
 		
 	</div>
-
-
-<div class="meta">
-	<div class="date">
-
-
-
-
-
-
-
-
-  
-
-
-<time datetime="2015-01-02T21:34:40+08:00" pubdate data-updated="true"></time></div>
-	<div class="tags">
-
-
-	<a class='category' href='/blog/categories/octopress/'>octopress</a>
-
-
-</div>
 	
 </div>
-</article>
 
-<nav id="pagenavi">
-    
-    
-    <div class="center"><a href="/blog/archives">Blog Archives</a></div>
-</nav>
+
+
+
+<section>
+    <h1>Comments</h1>
+    <div id="comments" aria-live="polite"><!-- Duoshuo Comment BEGIN -->
+<div class="ds-thread"></div>
+<script type="text/javascript">
+  var duoshuoQuery = {short_name:"zxcpro-github"};
+  (function() {
+    var ds = document.createElement('script');
+    ds.type = 'text/javascript';ds.async = true;
+    ds.src = 'http://static.duoshuo.com/embed.js';
+    ds.charset = 'UTF-8';
+    (document.getElementsByTagName('head')[0] 
+    || document.getElementsByTagName('body')[0]).appendChild(ds);
+  })();
+</script>
+<!-- Duoshuo Comment END -->
+</div>
+  </section>
+
 </div>
 	<footer id="footer" class="inner">Copyright &copy; 2015
 
