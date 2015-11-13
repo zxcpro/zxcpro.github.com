@@ -3,23 +3,14 @@
   <url>
     <loc>http://zxcpro.github.io/blog/2015/07/27/gao-bing-fa-miao-sha-xi-tong-de-she-ji/</loc>
     <lastmod>2015-07-27T21:23:32+08:00</lastmod>
-    <priority>0.8</priority>
-  </url>
-  <url>
-    <loc>http://zxcpro.github.io/blog/2015/01/02/hello-world/</loc>
-    <lastmod>2015-01-02T21:34:40+08:00</lastmod>
-    <priority>0.8</priority>
   </url>
   <url>
     <loc>http://zxcpro.github.io/blog/archives/</loc>
-    <lastmod>2015-07-27T23:21:47+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>0.7</priority>
   </url>
   <url>
     <loc>http://zxcpro.github.io/</loc>
-    <lastmod>2015-07-27T23:21:47+08:00</lastmod>
-    <changefreq>weekly</changefreq>
-    <priority>1.0</priority>
+  </url>
+  <url>
+    <loc>http://zxcpro.github.io/blog/categories/xi-tong-she-ji/</loc>
   </url>
 </urlset>
