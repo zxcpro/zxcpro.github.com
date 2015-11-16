@@ -177,9 +177,6 @@ redis队列挡掉了活动进行中，过量的秒杀请求
 
 
 [各阶段流量图]:/assets/img/seckill/requestflow.png
-[活动未开始]:/assets/img/seckill/unstarted.png
-[活动进行中]:/assets/img/seckill/ongoing.png
-[活动结束]:/assets/img/seckill/soldout.png
 [varnish作用机制]:/assets/img/seckill/varnish.jpeg
 [秒杀流程图]:/assets/img/seckill/seckill.png
 [排队秒杀流程图]:/assets/img/seckill/newseckill.png
