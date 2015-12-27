@@ -4,7 +4,7 @@
   <title><![CDATA[xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2015-12-27T15:04:55+08:00</updated>
+  <updated>2015-12-27T16:39:22+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -30,7 +30,7 @@
 
 <h2>1.RPC框架原理</h2>
 
-<p>下面通过分析一下一次rpc调用的过程来大致了解RPC的原理
+<p>下面通过分析一下一次rpc调用的过程来大致了解RPC的原理:
 <img src="http://zxcpro.github.io/assets/img/rpc/rpcflow.png" alt="RPC调用流程" /></p>
 
 <ol>
