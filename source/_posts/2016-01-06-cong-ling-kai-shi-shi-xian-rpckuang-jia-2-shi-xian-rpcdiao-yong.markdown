@@ -99,7 +99,7 @@ public abstract class AbstractInvocationHandler implements InvocationHandler {
 代理类需要spring来管理其生命周期，才能完成代理类到业务Biz的注入   
 
 定义代理类的bean：
-```xml
+```
 <bean id="helloService" class="org.zxc.zing.client.proxy.ServiceProxyBeanFactory" factory-method="getService">
   <constructor-arg value="org.zxc.zing.demo.api.HelloService" />
 </bean>
