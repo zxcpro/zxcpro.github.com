@@ -1,0 +1,922 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+
+  <title><![CDATA[Category: 中间件,rpc | xuanchen's Blog]]></title>
+  <link href="http://zxcpro.github.io/blog/categories/zhong-jian-jian-rpc/atom.xml" rel="self"/>
+  <link href="http://zxcpro.github.io/"/>
+  <updated>2016-01-12T19:57:13+08:00</updated>
+  <id>http://zxcpro.github.io/</id>
+  <author>
+    <name><![CDATA[xuanchen.zhao]]></name>
+    
+  </author>
+  <generator uri="http://octopress.org/">Octopress</generator>
+
+  
+  <entry>
+    <title type="html"><![CDATA[从零开始实现RPC框架--(2)实现RPC调用]]></title>
+    <link href="http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong/"/>
+    <updated>2016-01-06T22:05:15+08:00</updated>
+    <id>http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong</id>
+    <content type="html"><![CDATA[<h1>前言</h1>
+
+<p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
+之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>）。  <br/>
+这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p>
+
+<h1>PRC调用的实现</h1>
+
+<p>RPC框架主要可以分为启动和服务调用两个阶段，下面分阶段分别来看客户端和服务端的实现：</p>
+
+<h2>1.启动阶段</h2>
+
+<h3>1.1 客户端启动&ndash;初始化代理类</h3>
+
+<h4>像本地方法一样调用</h4>
+
+<p>客户端在启动时，需要为客户端所依赖的各个service生成各自的proxy bean，并且借助spring在启动时注入到对应的业务组件中，proxy bean应该拥有和service完全相同的接口，来接管所有对service的方法调用</p>
+
+<p>以一个sayHello例子为例，程序很简单，客户端告知我是“zxc”，服务端返回”Hello zxc!”：</p>
+
+<p>HelloService接口：
+<code>java
+public interface HelloService {
+     String sayHello(String name);
+}
+</code></p>
+
+<p>其实现类HelloServiceImpl：
+<code>java
+public class HelloServiceImpl implements HelloService {
+     public String sayHello(String name) {
+          return “Hello " + name;
+     }
+}
+</code></p>
+
+<p>在进行远程调用的时候，把HelloService接口作为api的一部分，单独打jar包，再由客户端应用引用。</p>
+
+<p>我们的目标要达到的效果是能够在客户端代码中自然的进行调用，效果如代码所示：
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">SomeClientBiz</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nd">@Autowired</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">HelloService</span> <span class="n">helloService</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">public</span> <span class="kt">void</span> <span class="nf">doSomething</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="o">...</span>
+</span><span class='line'>    <span class="n">String</span> <span class="n">reply</span> <span class="o">=</span> <span class="n">helloService</span><span class="o">.</span><span class="na">sayHello</span><span class="o">(</span><span class="s">&quot;zxc&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">...</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span></code></pre></td></tr></table></div></figure>
+这里注入的service bean并不是HelloServiceImpl，因为HelloServiceImpl并不在客户端上，这个bean只是实现了HelloService接口的动态代理类，在调用时其真正的行为是发起一次rpc调用。</p>
+
+<h4>代理类的实现方法</h4>
+
+<p>代理类可以利用JDK中的动态代理方式来实现：
+<code>java
+Object proxy = Proxy.newProxyInstance(classLoader, interfaceClassList, invocationHandler);
+</code>
+第一个参数是classLoader <br/>
+第二个参数是要代理的接口的class的list，事例中是只有一个元素即HelloService.class的list<br/>
+第三个参数是InvocationHandler，代理类的主逻辑就在这里，需要实现其invoke接口：<br/>
+<code>java
+public ServiceProxy implements InvocationHandler {
+  @Override
+    public Object invoke(Object obj, Method method, Object[] arguments) throws Throwable {
+        //proxy logic here
+    }
+}
+</code>
+这里invoke接口参数中，obj参数就是之前newProxyInstance所返回的proxy，在客户端调用的那个对象；method就是调用的方法，在例子中就是sayHello方法；arguments是此次调用所传入的参数队列，在例子中是String类型的&#8221;zxc&#8221;。</p>
+
+<p>这样就得到一个有着HelloService接口的代理类，这个类上任何方法的调用都会被传递给内部实现了InvocationHanlder接口的代理来处理</p>
+
+<p>PS： <br/>
+google的guava框架对动态代理相关类Proxy.newProxyInstance和InvocationHandler也有对应的封装，分别是Reflection.newProxy和AbstractInvocationHandler，
+<code>java
+//隐藏了classLoader的逻辑，并且支持泛型，也就是直接返回HelloService类型的对象
+HelloService service = Reflection.newProxy(serviceClass, invocationHandler);
+</code>
+<code>java
+public abstract class AbstractInvocationHandler implements InvocationHandler {
+  @Override
+    public final Object invoke(Object proxy, Method method, Object[] args) {
+      //先排除 hashCode,equals,toString 的调用
+        //只将有意义的调用传递给handlerInvocation方法
+        handleInvocation(proxy, method, args);
+    }
+}
+</code>
+让我们的代码更加简单优雅。</p>
+
+<h4>让spring管理代理类的生命周期</h4>
+
+<p>代理类需要spring来管理其生命周期，才能完成代理类到业务Biz的注入</p>
+
+<p>定义代理类的bean：
+<code>
+&lt;bean id="helloService" class="org.zxc.zing.client.proxy.ServiceProxyBeanFactory" factory-method="getService"&gt;
+  &lt;constructor-arg value="org.zxc.zing.demo.api.HelloService" /&gt;
+&lt;/bean&gt;
+</code>
+ServiceProxyBeanFactory是代理的工厂类，getService是工厂方法，而生成代理bean的参数，目前为止，只需要一个类的全名，以得到对应的class来生成代理类
+<code>java
+public class ServiceProxyBeanFactory {
+    public static Object getService(String serviceName) throws ClassNotFoundException {
+        Class&lt;?&gt; serviceClass = Class.forName(serviceName);
+        return Reflection.newProxy(serviceClass, new ServiceProxy(serviceName));
+    }
+}
+</code></p>
+
+<p>这样，启动阶段客户端的初始化就完成了，这些被注入到客户端业务逻辑中的代理配在之后调用阶段就会派上用场了。</p>
+
+<h3>1.2 服务端启动&ndash;加载service接口到实现的映射并启动netty</h3>
+
+<h4>加载service接口到实现类映射</h4>
+
+<p>在服务端，我们有接口HelloService及其实现类HelloServiceImpl，要保证在rpc请求到来时能找到要请求服务对应的实现逻辑，就需要在服务启动之时在内存中维护好这个映射。</p>
+
+<p>还是借助spring，我们来定义这些bean
+<code>
+&lt;bean id="helloService" class="org.zxc.zing.demo.service.impl.HelloServiceImpl" /&gt;
+&lt;bean class="org.zxc.zing.server.remote.RemoteServiceBean" init-method="init"&gt;
+  &lt;property name="serviceName" value="org.zxc.zing.demo.api.HelloService"/&gt;
+    &lt;property name="serviceImpl" ref="helloService"/&gt;
+&lt;/bean&gt;
+</code>
+RemoteServiceBean中有两个参数，serviceName即之前和客户端统一的服务接口类的全名，serviceImpl即服务接口对应的服务实现类<br/>
+我们把这个映射用一个静态类的静态成员Map&lt;String, Object>的方式维护在内存中，并且在spring加载这个bean的时候执行init方法，把当前的Impl加入Map
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RemoteServiceBean</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">serviceName</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">serviceImpl</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">public</span> <span class="kt">void</span> <span class="nf">init</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;spring add serviceBean init&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">RemoteServiceServer</span><span class="o">.</span><span class="na">addService</span><span class="o">(</span><span class="n">serviceName</span><span class="o">,</span> <span class="n">serviceImpl</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span><span class="n">java</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RemoteServiceServer</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="n">ConcurrentHashMap</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&gt;</span> <span class="n">serviceImplMap</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConcurrentHashMap</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&gt;();&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">addService</span><span class="o">(</span><span class="n">String</span> <span class="n">serviceName</span><span class="o">,</span> <span class="n">Object</span> <span class="n">serviceImpl</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">serviceImplMap</span><span class="o">.</span><span class="na">putIfAbsent</span><span class="o">(</span><span class="n">serviceName</span><span class="o">,</span> <span class="n">serviceImpl</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+虽然目前只有spring加载bean初始化时串行的进行add，但之后可能涉及到一些场景在其它时机对map进行增删，比如管理服务时需要停止/恢复提供某个service，先用一个ConcurrentHashMap来保证线程安全。</p>
+
+<p>随着spring bean一个个加载完成，服务接口到实现类的映射也就加载完毕了。</p>
+
+<p>可以看到，在addService之前还有一个startup方法，即启动netty服务，下面就来看看netty服务的启动。</p>
+
+<h4>启动netty服务</h4>
+
+<p>之前说rpc服务端启动时需要加载服务映射和启动netty服务两件事，先后顺序是怎样的呢？ <br/>
+考虑到之后有了服务注册中心，服务端加载完service bean的时候要告知注册中心，这台服务器可以提供该service的服务，这样客户端就能拿到这台服务端的地址从而发送请求，期望请求到来之时服务端是已经启动好的，也就是说启动netty服务需要在加载service bean之前完成。
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">RemoteServiceServer</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kd">volatile</span> <span class="kt">boolean</span> <span class="n">started</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">private</span> <span class="kd">static</span> <span class="n">ConcurrentHashMap</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">serviceImplMap</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ConcurrentHashMap</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">String</span><span class="o">,</span> <span class="n">Object</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;();</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">static</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">bootstrap</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">addService</span><span class="o">(</span><span class="n">String</span> <span class="n">serviceName</span><span class="o">,</span> <span class="n">Object</span> <span class="n">serviceImpl</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">serviceImplMap</span><span class="o">.</span><span class="na">putIfAbsent</span><span class="o">(</span><span class="n">serviceName</span><span class="o">,</span> <span class="n">serviceImpl</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">bootstrap</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">started</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">synchronized</span> <span class="o">(</span><span class="n">RemoteServiceServer</span><span class="o">.</span><span class="na">class</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(!</span><span class="n">started</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">doStartup</span><span class="o">();</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">doStartup</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="c1">//netty bootstrap</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kd">static</span> <span class="n">Object</span> <span class="nf">getActualServiceImpl</span><span class="o">(</span><span class="n">String</span> <span class="n">serviceName</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(!</span><span class="n">started</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">warn</span><span class="o">(</span><span class="s">&quot;server not started&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">bootstrap</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;cur map when get:&quot;</span><span class="o">+</span><span class="n">serviceImplMap</span><span class="o">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">serviceImplMap</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">serviceName</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;</span>
+</span><span class='line'><span class="n">在RemoteServiceServer的静态块中执行启动</span><span class="err">，</span><span class="n">当spring加载第一个RemoteServiceBean并执行其init方法时</span><span class="err">，</span><span class="n">RemoteServiceServer</span><span class="o">.</span><span class="na">addService会触发JVM加载RemoteServiceServer类</span><span class="err">，</span><span class="n">进而执行启动bootstrap流程</span><span class="err">。</span>
+</span><span class='line'><span class="n">除去服务端第一次启动时需要执行bootstrap之外</span><span class="err">，</span><span class="n">考虑到某些情况下</span><span class="err">，</span><span class="n">比如初始化启动失败</span><span class="err">，</span><span class="n">在请求到来时发现服务未能启动成功而尝试启动等</span><span class="err">，</span><span class="n">用volatile的started标志位加上double</span><span class="o">-</span><span class="n">check的方式对bootstrap做一个并发的控制以保证线程安全</span><span class="err">。</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span><span class="n">java</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">doStart</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">EventLoopGroup</span> <span class="n">bossGroup</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">NioEventLoopGroup</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">EventLoopGroup</span> <span class="n">workerGroup</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">NioEventLoopGroup</span><span class="o">();&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="n">ServerBootstrap</span> <span class="n">bootstrap</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ServerBootstrap</span><span class="o">();</span>
+</span><span class='line'>    <span class="n">bootstrap</span><span class="o">.</span><span class="na">group</span><span class="o">(</span><span class="n">bossGroup</span><span class="o">,</span> <span class="n">workerGroup</span><span class="o">)</span>
+</span><span class='line'>            <span class="o">.</span><span class="na">channel</span><span class="o">(</span><span class="n">NioServerSocketChannel</span><span class="o">.</span><span class="na">class</span><span class="o">)</span>
+</span><span class='line'>            <span class="o">.</span><span class="na">childHandler</span><span class="o">(</span><span class="k">new</span> <span class="n">ChannelInitializer</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span><span class="n">SocketChannel</span><span class="o">&amp;</span><span class="n">gt</span><span class="o">;()</span> <span class="o">{</span>
+</span><span class='line'>                <span class="nd">@Override</span>
+</span><span class='line'>                <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">initChannel</span><span class="o">(</span><span class="n">SocketChannel</span> <span class="n">ch</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>                    <span class="n">ch</span><span class="o">.</span><span class="na">pipeline</span><span class="o">().</span><span class="na">addLast</span><span class="o">(</span><span class="k">new</span> <span class="nf">NettyDecoder</span><span class="o">(),</span> <span class="k">new</span> <span class="nf">NettyEncoder</span><span class="o">(),</span> <span class="k">new</span> <span class="nf">NettyServerHandler</span><span class="o">());</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>            <span class="o">}).</span><span class="na">option</span><span class="o">(</span><span class="n">ChannelOption</span><span class="o">.</span><span class="na">SO_BACKLOG</span><span class="o">,</span> <span class="mi">128</span><span class="o">)</span>
+</span><span class='line'>            <span class="o">.</span><span class="na">childOption</span><span class="o">(</span><span class="n">ChannelOption</span><span class="o">.</span><span class="na">SO_KEEPALIVE</span><span class="o">,</span> <span class="kc">true</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">try</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ChannelFuture</span> <span class="n">f</span> <span class="o">=</span> <span class="n">bootstrap</span><span class="o">.</span><span class="na">bind</span><span class="o">(</span><span class="mi">8080</span><span class="o">).</span><span class="na">sync</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">f</span><span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="k">new</span> <span class="nf">ChannelFutureListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>            <span class="nd">@Override</span>
+</span><span class='line'>            <span class="kd">public</span> <span class="kt">void</span> <span class="nf">operationComplete</span><span class="o">(</span><span class="n">ChannelFuture</span> <span class="n">future</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>                <span class="k">if</span> <span class="o">(</span><span class="n">future</span><span class="o">.</span><span class="na">isSuccess</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>                    <span class="n">started</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>                    <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(</span><span class="s">&quot;server started!&quot;</span><span class="o">);</span>
+</span><span class='line'>                <span class="o">}</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>        <span class="o">});</span>
+</span><span class='line'>    <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">InterruptedException</span> <span class="n">e</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">log</span><span class="o">.</span><span class="na">error</span><span class="o">(</span><span class="s">&quot;server started failed:&quot;</span><span class="o">+</span><span class="n">e</span><span class="o">.</span><span class="na">getMessage</span><span class="o">(),</span> <span class="n">e</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="n">doStart中调用netty的api进行启动</span><span class="err">：</span>
+</span><span class='line'><span class="n">EventLoop可以理解为类似守护进程</span><span class="err">，</span><span class="n">不断处理到来的请求</span><span class="err">，</span><span class="n">这里定义了一个bossGroup</span><span class="err">，</span><span class="n">一个workerGroup</span><span class="err">，</span><span class="n">bossGroup接收请求后分发给workerGroup</span><span class="err">，</span><span class="n">workerGroup在自己的线程池中处理这些请求</span><span class="err">。</span>
+</span><span class='line'><span class="n">数据到达当前机器</span><span class="err">，</span><span class="n">服务端进行逻辑处理</span><span class="err">，</span><span class="n">处理完成的数据传输回去这些逻辑都是依赖ChannelHandler来实现</span><span class="err">，</span><span class="n">代码中我们定义的NettyDecoder</span><span class="err">，</span><span class="n">NettyEncoder</span><span class="err">，</span><span class="n">NettyServerHandler都是ChannelHandler</span><span class="err">，</span><span class="n">具体的机制在调用阶段详述</span><span class="err">。</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">PS</span><span class="err">：</span>
+</span><span class='line'><span class="n">netty框架屏蔽了很多的底层网络细节</span><span class="err">，</span><span class="n">api封装的简单易用</span><span class="err">，</span><span class="n">如果希望对netty有个大致的了解</span><span class="err">，</span><span class="n">可以参考</span><span class="o">[</span><span class="n">官方UserGuide</span><span class="o">][</span><span class="n">netty</span><span class="o">]</span><span class="err">，</span><span class="n">netty</span> <span class="mi">3</span><span class="o">.</span><span class="na">x</span><span class="o">/</span><span class="mi">4</span><span class="o">.</span><span class="na">x</span><span class="o">/</span><span class="mi">5</span><span class="o">.</span><span class="na">x版本api都有较大的差异</span><span class="err">，</span><span class="n">本项目依赖的是4</span><span class="o">.</span><span class="mf">0.32</span><span class="n">版本</span><span class="err">。</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">这样</span><span class="err">，</span><span class="n">客户端完成了服务代理类的注入</span><span class="err">，</span><span class="n">服务端启动了netty并加载了service对应的实现</span><span class="err">，</span><span class="n">一切就绪等待RPC调用开始</span><span class="err">。</span>
+</span><span class='line'>
+</span><span class='line'><span class="err">##</span><span class="mi">2</span><span class="o">.</span><span class="na">调用阶段</span>
+</span><span class='line'><span class="o">[</span><span class="n">上一篇文章</span><span class="o">][</span><span class="n">previous</span><span class="o">]</span><span class="n">中主要描述了一次RPC调用的过程</span><span class="err">，</span><span class="n">为了读起来方便</span><span class="err">，</span><span class="n">这里再引用一遍</span><span class="err">：</span>
+</span><span class='line'><span class="o">![</span><span class="n">RPC调用流程</span><span class="o">][</span><span class="n">rpcflow</span><span class="o">]</span>
+</span><span class='line'><span class="mi">1</span><span class="o">.</span>  <span class="n">客户端调用了某个服务的某个方法</span><span class="err">，</span><span class="n">期望得到处理的结果</span>
+</span><span class='line'><span class="mi">2</span><span class="o">.</span>  <span class="n">把本次调用的上下文</span><span class="err">，</span><span class="n">如服务名</span><span class="err">、</span><span class="n">方法签名</span><span class="err">、</span><span class="n">参数等信息序列化</span><span class="err">，</span><span class="n">构造request</span>
+</span><span class='line'><span class="mi">3</span><span class="o">.</span>  <span class="n">根据被调用的服务名</span><span class="err">，</span><span class="n">方法签名等信息找到可以提供服务的server列表</span>
+</span><span class='line'><span class="mi">4</span><span class="o">.</span>  <span class="n">根据负载均衡的规则</span><span class="err">，</span><span class="n">选出其中一个server作为目标来调用</span>
+</span><span class='line'><span class="mi">5</span><span class="o">.</span>  <span class="n">向选出的server发送该请求</span><span class="err">，</span><span class="n">客户端线程挂起</span>
+</span><span class='line'><span class="mi">6</span><span class="o">.</span>  <span class="n">server接收到请求</span><span class="err">，</span><span class="n">反序列并解析得到对应的服务名</span><span class="err">，</span><span class="n">方法签名</span><span class="err">，</span><span class="n">参数信息</span>
+</span><span class='line'><span class="mi">7</span><span class="o">.</span>  <span class="n">server根据调用信息找到真正的业务服务实例</span><span class="err">，</span><span class="n">调用业务服务该方法</span>
+</span><span class='line'><span class="mi">8</span><span class="o">.</span>  <span class="n">把方法的返回值序列化</span><span class="err">，</span><span class="n">构造返回response</span>
+</span><span class='line'><span class="mi">9</span><span class="o">.</span>  <span class="n">把response传回给client</span>
+</span><span class='line'><span class="mi">10</span><span class="o">.</span>  <span class="n">client接收并反序列化response</span><span class="err">，</span><span class="n">得到服务处理结果</span><span class="err">，</span><span class="n">返回给1中调用的地方</span><span class="err">，</span><span class="n">唤醒对应的客户端线程</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">步骤1中service代理类已经在客户端启动过程中完成注入</span>
+</span><span class='line'><span class="n">步骤2中</span><span class="err">，</span><span class="n">当service代理类被调用时</span><span class="err">，</span><span class="n">调用相关的信息就会被传递给启动阶段所说的InvocationHandler</span><span class="err">，</span><span class="n">即ServicePorxy的invoke中</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="kd">public</span> <span class="n">ServiceProxy</span> <span class="kd">implements</span> <span class="n">InvocationHandler</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">invoke</span><span class="o">(</span><span class="n">Object</span> <span class="n">obj</span><span class="o">,</span> <span class="n">Method</span> <span class="n">method</span><span class="o">,</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">arguments</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Throwable</span> <span class="o">{</span>
+</span><span class='line'>        <span class="c1">//步骤3，应该是从注册中心拉到的可提供服务的服务器列表中根据负载均衡规则选出一个，此版本上的实现暂以常量设置</span>
+</span><span class='line'>        <span class="n">ProviderInfo</span> <span class="n">provider</span> <span class="o">=</span> <span class="n">ServiceProviderManager</span><span class="o">.</span><span class="na">getProvider</span><span class="o">(</span><span class="n">serviceName</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//步骤4，构造远程调用的request</span>
+</span><span class='line'>        <span class="n">RemoteRequest</span> <span class="n">request</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">RemoteRequest</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">setRequestId</span><span class="o">(</span><span class="n">UUID</span><span class="o">.</span><span class="na">randomUUID</span><span class="o">().</span><span class="na">toString</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">setServiceName</span><span class="o">(</span><span class="n">serviceName</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">setMethodName</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getName</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">setParameterTypes</span><span class="o">(</span><span class="n">method</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">request</span><span class="o">.</span><span class="na">setArguments</span><span class="o">(</span><span class="n">args</span><span class="o">);</span>
+</span><span class='line'>    <span class="c1">//步骤5</span>
+</span><span class='line'>        <span class="n">RemoteClient</span> <span class="n">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">RemoteClient</span><span class="o">(</span><span class="n">provider</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">RemoteResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">send</span><span class="o">(</span><span class="n">request</span><span class="o">);&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="na">getResponseValue</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">code</span><span class="o">&gt;</span>
+</span><span class='line'><span class="n">步骤4中网络之间请求和响应的设计如下</span><span class="err">：</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;</span><span class="n">java</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ServiceRequest</span><span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">requestId</span><span class="o">;</span> <span class="c1">//可代表一次请求的唯一编号</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">serviceName</span><span class="o">;</span> <span class="c1">//调用的服务名</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">methodName</span><span class="o">;</span> <span class="c1">//调用的函数名</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Class</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;?&gt;[]</span> <span class="n">parameterTypes</span><span class="o">;</span> <span class="c1">//调用的函数的参数的类型</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span><span class="o">[]</span> <span class="n">parameters</span><span class="o">;</span> <span class="c1">//调用函数传递的参数</span>
+</span><span class='line'><span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ServiceResponse</span><span class="o">{</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">String</span> <span class="n">requestId</span><span class="o">;</span> <span class="c1">//唯一请求的编号</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="kt">int</span> <span class="n">responseCode</span><span class="o">;</span> <span class="c1">//代表返回值是否正常的结果码，比如可定义200为正常，500为异常</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">responseValue</span><span class="o">;</span> <span class="c1">//返回的结果</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>步骤5中客户端找到了对应的服务端机器，需要发起netty连接服务端、序列化request、发送请求、线程挂起
+<code>java
+    public RemoteResponse send(RemoteRequest request) throws TimeoutException, ExecutionException, InterruptedException {
+        final SettableFuture&lt;RemoteResponse&gt; future = SettableFuture.create();
+        //➀启动netty连接
+        EventLoopGroup bossGroup = new NioEventLoopGroup();
+        try {
+            Bootstrap bootstrap = new Bootstrap();
+            bootstrap.group(bossGroup)
+                    .channel(NioSocketChannel.class)
+                    .option(ChannelOption.SO_KEEPALIVE, true)
+                    .handler(new ChannelInitializer&lt;SocketChannel&gt;() {
+                        @Override
+                        protected void initChannel(SocketChannel ch) throws Exception {
+                        //➃处理我们业务逻辑的ChannelHandler
+                            ch.pipeline().addLast(new NettyDecoder(), new NettyEncoder(), new NettyClientHandler(future));
+                        }
+                    });
+      //➁连接到netty服务端
+            ChannelFuture f = bootstrap.connect(providerInfo.getAddress(), providerInfo.getPort()).sync();
+            //➂发送request
+            ChannelFuture writeFuture = f.channel().writeAndFlush(request);
+            return future.get(1000, TimeUnit.MILLISECONDS);
+        } finally {
+            bossGroup.shutdownGracefully();
+        }
+    }
+</code>
+➀在客户端启动netty，与服务端不同，只需要一个group，之后进行一系列的配置<br/>
+➁调用bootstrap.connect连接目标netty服务器➂<br/>
+➂连接成功后，writeAndFlush发送请求<br/>
+➃之前提到netty中的业务逻辑都是在ChannelHandler中实现，ChannelHandler分为ChannelInboundHandler和ChannelOutboundHandler，InboundHandler会在数据传入当前服务器时进行处理，OutboundHandler在当前服务器发送数据时进行处理，在这里使用到NettyDecoder，NettyEncoder和NettyClientHandler三个类，其中NettyDecoder和NettyClientHandler属于InboundHandler，NettyEncoder为OutBoundHandler，所以在➂处writeAndFlush之后，request会经过OutboundHandler的处理，这里就是NettyEncoder，在NettyEncoder中完成序列化的工作
+<code>java
+public class NettyEncoder extends MessageToByteEncoder {
+    @Override
+    protected void encode(ChannelHandlerContext ctx, Object msg, ByteBuf out) throws Exception {
+      //序列化
+        byte[] bytes = Serializer.serialize(msg);
+        //先写入数据的长度
+        out.writeInt(bytes.length);
+        //写入要传输数据的字节流
+        out.writeBytes(bytes);
+    }
+}
+</code>
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">Serializer</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">byte</span><span class="o">[]</span> <span class="nf">serialize</span><span class="o">(</span><span class="n">Object</span> <span class="n">obj</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ByteArrayOutputStream</span> <span class="n">bos</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ByteArrayOutputStream</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">Hessian2Output</span> <span class="n">out</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Hessian2Output</span><span class="o">(</span><span class="n">bos</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">out</span><span class="o">.</span><span class="na">writeObject</span><span class="o">(</span><span class="n">obj</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">out</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">bos</span><span class="o">.</span><span class="na">toByteArray</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">public</span> <span class="kd">static</span> <span class="n">Object</span> <span class="nf">deserialize</span><span class="o">(</span><span class="kt">byte</span><span class="o">[]</span> <span class="n">data</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">IOException</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">ByteArrayInputStream</span> <span class="n">bis</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ByteArrayInputStream</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Hessian2Input</span> <span class="n">in</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Hessian2Input</span><span class="o">(</span><span class="n">bis</span><span class="o">);</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">in</span><span class="o">.</span><span class="na">readObject</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span></code></pre></td></tr></table></div></figure>
+Serializer.serialize中使用hession完成Object到字节流的转换，而Encoder中在写入这部分字节流之前，先将数据的长度写入，以供之后数据的接收端校验是否接收到了完成的数据。</p>
+
+<p>步骤6 服务端收到字节流，需要在接收完整后进行反序列化 <br/>
+对于服务端来说，接收数据就要需要InboundHandler来处理了，在1.2服务端启动阶段可以看到NettyDecoder和NettyServerHandler来处理</p>
+
+<p>关于NettyDecoder，<a href="http://netty.io/wiki/user-guide-for-4.x.html#wiki-h3-11">Netty UserGuide-基于流的传输</a>中的提到，在TCP/IP使用这种基于流传输的协议时，收到的数据会被存入一个buffer中，而这个buffer并不是数据包的buffer，而是字节的buffer。也就是说你的系统可能接收到这样的三个数据包： <br/>
+<img src="https://camo.githubusercontent.com/24ed1176ecca468dfb2b8b017bb927a8715a16f2/687474703a2f2f756d6c2e6d766e7365617263682e6f72672f676973742f3832653366626530653264346466323833323262" alt="系统收到的数据包" /> <br/>
+而你的应用收到字节片段很可能是这样的： <br/>
+<img src="https://camo.githubusercontent.com/5b595baf5071bf669f81d08b7554064f4142cc69/687474703a2f2f756d6c2e6d766e7365617263682e6f72672f676973742f6233316330626437626266633639666438326436" alt="应用收到的字节片段" /> <br/>
+对于这个问题，需要在新的字节数据放入buffer时检测一下是否符合我们期望的长度
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NettyDecoder</span> <span class="kd">extends</span> <span class="n">ByteToMessageDecoder</span><span class="o">{&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="c1">//每当有新的字节接收到时，decode就会被调用</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">decode</span><span class="o">(</span><span class="n">ChannelHandlerContext</span> <span class="n">ctx</span><span class="o">,</span> <span class="n">ByteBuf</span> <span class="n">in</span><span class="o">,</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">out</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//收到的字节还不足一个int，即Encode阶段写入的数据总长度，先不处理</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">in</span><span class="o">.</span><span class="na">readableBytes</span><span class="o">()</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">4</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">log</span><span class="o">.</span><span class="na">info</span><span class="o">(&amp;</span><span class="n">ldquo</span><span class="o">;</span><span class="n">no</span> <span class="n">enough</span> <span class="n">readable</span> <span class="n">bytes</span><span class="o">&amp;</span><span class="n">rdquo</span><span class="o">;);</span>
+</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="c1">//此时收到的字节达到4个字节，提取一个int，即期望接收的数据总长度</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">dataLength</span> <span class="o">=</span> <span class="n">in</span><span class="o">.</span><span class="na">readInt</span><span class="o">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">dataLength</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ctx</span><span class="o">.</span><span class="na">close</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//接收的字节流除去int剩余的字节长度还未达到期望的长度，表示数据未接收完整</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">in</span><span class="o">.</span><span class="na">readableBytes</span><span class="o">()</span> <span class="o">&amp;</span><span class="n">lt</span><span class="o">;</span> <span class="n">dataLength</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">in</span><span class="o">.</span><span class="na">resetReaderIndex</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//长度达到了，已经足够，读取出完整的数据</span>
+</span><span class='line'>    <span class="kt">byte</span><span class="o">[]</span> <span class="n">data</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">byte</span><span class="o">[</span><span class="n">dataLength</span><span class="o">];</span>
+</span><span class='line'>    <span class="n">in</span><span class="o">.</span><span class="na">readBytes</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="c1">//把完整的数据反序列化为对象</span>
+</span><span class='line'>    <span class="n">Object</span> <span class="n">deserialized</span> <span class="o">=</span> <span class="n">Serializer</span><span class="o">.</span><span class="na">deserialize</span><span class="o">(</span><span class="n">data</span><span class="o">);</span>
+</span><span class='line'>    <span class="c1">//当decode中把一个对象加入到out中，代表已经解析成功了，之后decode不再被调用</span>
+</span><span class='line'>    <span class="n">out</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">deserialized</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span></code></pre></td></tr></table></div></figure></p>
+
+<p>步骤7、8、9： request完成了反序列化，就会被传递给下一个ChannelInboundHandler，即服务端的NettyServerHandler
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">NettyServerHandler</span> <span class="kd">extends</span> <span class="n">SimpleChannelInboundHandler</span><span class="o">&lt;</span><span class="n">RemoteRequest</span><span class="o">&gt;</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">channelRead0</span><span class="o">(</span><span class="n">ChannelHandlerContext</span> <span class="n">ctx</span><span class="o">,</span> <span class="n">RemoteRequest</span> <span class="n">request</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>    <span class="c1">//收到了request，从启动时加载好的map中找到request请求中的serviceImpl实例</span>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">actualServiceImpl</span> <span class="o">=</span> <span class="n">RemoteServiceServer</span><span class="o">.</span><span class="na">getActualServiceImpl</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getServiceName</span><span class="o">());&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span>    <span class="nf">if</span> <span class="o">(</span><span class="n">actualServiceImpl</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//根据request中的方法名，参数类型，参数等信息，反射调用serviceImpl</span>
+</span><span class='line'>      <span class="n">Class</span><span class="o">&amp;</span><span class="n">lt</span><span class="o">;?&amp;</span><span class="n">gt</span><span class="o">;</span> <span class="n">serviceInterface</span> <span class="o">=</span> <span class="n">actualServiceImpl</span><span class="o">.</span><span class="na">getClass</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">Method</span> <span class="n">method</span> <span class="o">=</span> <span class="n">serviceInterface</span><span class="o">.</span><span class="na">getMethod</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getMethodName</span><span class="o">(),</span> <span class="n">request</span><span class="o">.</span><span class="na">getParameterTypes</span><span class="o">());</span>
+</span><span class='line'>        <span class="c1">//反射计算得到结果</span>
+</span><span class='line'>        <span class="n">Object</span> <span class="n">result</span> <span class="o">=</span> <span class="n">method</span><span class="o">.</span><span class="na">invoke</span><span class="o">(</span><span class="n">actualServiceImpl</span><span class="o">,</span> <span class="n">request</span><span class="o">.</span><span class="na">getArguments</span><span class="o">());</span>
+</span><span class='line'>        <span class="c1">//构造response</span>
+</span><span class='line'>        <span class="n">RemoteResponse</span> <span class="n">response</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">RemoteResponse</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setRequestId</span><span class="o">(</span><span class="n">request</span><span class="o">.</span><span class="na">getRequestId</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">response</span><span class="o">.</span><span class="na">setResponseValue</span><span class="o">(</span><span class="n">result</span><span class="o">);</span>
+</span><span class='line'>        <span class="c1">//向客户端返回构造完成的response</span>
+</span><span class='line'>    <span class="n">ctx</span><span class="o">.</span><span class="na">writeAndFlush</span><span class="o">(</span><span class="n">response</span><span class="o">)</span>
+</span><span class='line'>        <span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="n">ChannelFutureListener</span><span class="o">.</span><span class="na">CLOSE</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;}</span>
+</span></code></pre></td></tr></table></div></figure>
+服务端发送给客户端时，response经过NettyEncoder进行序列化。
+PS:<br/>
+这里的method的反射调用，即服务端的业务逻辑，是跑在workerEventLoopGroup线程池的线程中，但是如果业务逻辑中涉及到一些连接数据库、远程连接等耗时操作，建议新开线程池来执行，执行完成后再调用netty返回response，而让netty线程池专注处理网络通讯。</p>
+
+<p>步骤10 客户端收到返回的response，经历NettyDecoder反序列化后，交给NettyClientHandler处理，这里需要提一下：netty的网络操作都是异步的，但是客户端代码调用时却需要同步的得到结果，这里设计到一个异步转同步的问题，客户端发出请求后，要拿到结果，但是结果返回之前需要先挂起线程，拿到结果后再唤醒线程，是类似一个Future，原理如下：
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResponseFuture</span><span class="o">{</span>
+</span><span class='line'>  <span class="c1">//默认future没有完成，result为空</span>
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">completed</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">result</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="kd">public</span> <span class="n">Object</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//如果未完成时来get，就会一直wait下去</span>
+</span><span class='line'>      <span class="kd">synchronized</span><span class="o">(</span><span class="k">this</span><span class="o">){</span>
+</span><span class='line'>          <span class="c1">//直到set被调用，标记Future为完成，线程被唤醒，返回result</span>
+</span><span class='line'>          <span class="k">while</span><span class="o">(!</span><span class="n">completed</span><span class="o">){</span>
+</span><span class='line'>              <span class="k">this</span><span class="o">.</span><span class="na">wait</span><span class="o">();</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="c1">//当接收到返回的response时，设置任务完成，通知挂起的线程</span>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">code</span><span class="o">&gt;&lt;/</span><span class="n">pre</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">p</span><span class="o">&gt;</span>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">set</span><span class="o">(</span><span class="n">Object</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">this</span><span class="o">.</span><span class="na">completed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">notifyAll</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+以上代码只是为了说明原理，真实情况不会这么简单，需要一些异常处理和超时机制防止线程一直沉睡等，我直接使用了guava框架的SettableFuture，其get方法可以传入timeout时间，set方法来标记Future得到结果，原理是一致的。</p>
+
+<p>先再回顾一下客户端在发送请求的片段
+<code>java
+    public RemoteResponse send(RemoteRequest request){
+        final SettableFuture&lt;RemoteResponse&gt; future = SettableFuture.create();
+        //启动netty连接
+        ...
+        //添加ChannelHandler
+        ch.pipeline().addLast(new NettyDecoder(), new NettyEncoder(), new NettyClientHandler(future));
+    //连接到netty服务端，发送请求
+        ...
+        //调用future拿结果，得到结果之前挂起
+        return future.get(1000, TimeUnit.MILLISECONDS);
+        ...
+    }
+</code>
+在发送之前创建一个Response的SettableFuture，创建连接时作为NettyClientHandler的成员变量，发送请求之后，调用future.get，在得到response之前，挂起线程。</p>
+
+<p>在接收到response，反序列化后，reponse交给NettyClientHandler：
+&#8220;`java
+public class NettyClientHandler extends SimpleChannelInboundHandler<RemoteResponse> {</p>
+
+<pre><code>private SettableFuture&lt;RemoteResponse&gt; future;
+
+public NettyClientHandler(SettableFuture&lt;RemoteResponse&gt; future) {
+    this.future = future;
+}
+
+@Override
+protected void channelRead0(ChannelHandlerContext ctx, RemoteResponse msg) throws Exception {
+    future.set(msg);
+}
+</code></pre>
+
+<p>&#8220;`
+调用future.set设置response，唤醒线程，把response的结果返回给代码调用处，rpc框架的基本调用就完成了。</p>
+
+<h1>测试程序</h1>
+
+<p>此版本提供rpc程序的本地测试：
+在zing-demo模块的test目录下，有一个DemoService的测试程序，先运行DemoServerTest的main函数，会在本地以8080端口启动netty服务，再运行DemoClientTest会以rpc的方式发起请求。</p>
+
+<h1>总结</h1>
+
+<p>这个版本主要目标是实现RPC框架的联通，演示其中一些关键点的实现，其中很多地方有优化的空间，比如客户端连接可以重用，服务端业务逻辑在新的线程池中执行，还有下一次会实现的服务注册中心功能，
+如果对文章中有任何意见和建议，欢迎指正和共同讨论。</p>
+]]></content>
+  </entry>
+  
+  <entry>
+    <title type="html"><![CDATA[从零开始实现RPC框架--(1)基本原理]]></title>
+    <link href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/"/>
+    <updated>2015-12-10T10:53:30+08:00</updated>
+    <id>http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li</id>
+    <content type="html"><![CDATA[<h1>一.RPC概述</h1>
+
+<p>RPC即是远程过程调用(Remote Procedure Call)，允许一台计算机调用另一台计算机上的程序得到结果，而代码中不需要做额外的编程，就像在本地调用一样。</p>
+
+<p>现在互联网应用的量级越来越大，单台计算机的能力有限，需要借助可扩展的计算机集群来完成，分布式的应用可以借助rpc来完成机器之间的调用。</p>
+
+<h1>二.RPC框架原理</h1>
+
+<p>在RPC框架中主要有两个角色，client和server。一台服务器作为server向外提供服务，同时其内部又调用了其它的服务，这时它也是另外一个服务的client。</p>
+
+<h2>1.RPC框架原理</h2>
+
+<p>下面通过分析一下一次rpc调用的过程来大致了解RPC的原理</p>
+
+<p><img src="/assets/img/rpc/rpcflow.png" alt="RPC调用流程" /></p>
+
+<ol>
+<li>客户端调用了某个服务的某个方法，期望得到处理的结果</li>
+<li>把本次调用的上下文，如服务名、方法签名、参数等信息序列化，构造request</li>
+<li>根据被调用的服务名，方法签名等信息找到可以提供服务的server列表</li>
+<li>根据负载均衡的规则，选出其中一个server作为目标来调用</li>
+<li>向选出的server发送该请求</li>
+<li>server接收到请求，反序列并解析得到对应的服务名，方法签名，参数信息</li>
+<li>server根据调用信息找到真正的业务服务实例，调用业务服务该方法</li>
+<li>把方法的返回值序列化，构造返回response</li>
+<li>把response传回给client</li>
+<li>client接收并反序列化response，得到服务处理结果，返回给1中调用的地方</li>
+</ol>
+
+
+<h2>2.实现一次RPC请求要解决的问题</h2>
+
+<p>原理并不复杂，但实现起来每一个步骤中都有需要解决的问题，对应一种或多种解决的方案，一个个来分析：</p>
+
+<h3>1.客户端调用了某个服务的某个方法，期望得到处理的结果</h3>
+
+<p>Q：如何自然的发起RPC调用？</p>
+
+<p>client调用服务时希望尽量能够自然，就像在调用本地方法一样，比如要调用的服务是UserService，那么希望调用的时候也是userService.getUser(userId)这样的形式，客户端代码编写阶段就清晰的看到服务可提供的方法的签名</p>
+
+<p>A:利用代理模式，这里需要的是一个和userService有一样接口的代理，在其方法被调用的时候执行远程请求的逻辑，以java为例，可以用JDK的动态代理代理或者AOP来实现。</p>
+
+<h3>2.把本次调用的上下文，如服务名、方法签名、参数等信息序列化，构造request</h3>
+
+<p>Q:如何进行序列化？</p>
+
+<p>序列化其实是协议的一部分，网络一端以什么样的规则把数据对象序列化成二进制串，网络传输到了另一端后以什么样的规则解析回来。</p>
+
+<p>A:成熟的序列化实现方式已经有很多，不需要自己来实现，比如JDK自带的序列化，jackson，hession，protostuff等，我们会根据各种序列化的速度，序列化后占用空间大小等方面来选择，详见<a href="https://code.google.com/p/thrift-protobuf-compare/wiki/Benchmarking">各种序列化性能比较</a>。</p>
+
+<h3>3.根据被调用的该服务名，方法签名 找到可以提供服务的server列表</h3>
+
+<p>Q:server列表存在哪里？</p>
+
+<p>A:这里所说的是一个服务注册中心，在组件启动的时候可以加载当前正在提供服务的server列表，这意味注册中心需要能够存储这个列表，并且在server服务器上/下线、心跳中断/恢复时及时更新列表，并且注册中心必须保证高可用，不能由于一两台机器挂掉就变得不可用，也就是说需要集群和冗余的支持。听起来有些复杂，其实业界已经有成熟的方案了，可以选择利用zookeeper来实现，其高可用性，支持集群和冗余，pub/sub的功能都是注册中心需要的。</p>
+
+<p>另外，除了注册中心外，client上也可以在内存中维护一份列表，启动时访问注册中心初始化，在注册中心列表变化时接收通知同步修改，这样做的好处是不用每次调用都访问注册中心。</p>
+
+<h3>4.根据负载均衡的规则，选出其中一个server作为目标来调用</h3>
+
+<p>Q:负载均衡由谁实现？如何实现？负载均衡的策略如何？</p>
+
+<p>A:负载均衡可以作为独立模块，也可以直接放在客户端中，两种方案各有利弊: <br/>
+独立部署的好处是客户端的职责单一，只负责调用，负载均衡模块可以根据全局的服务器状态来选择合适的server，缺点是客户端每次请求都要到负载均衡中心去请求server地址，多了一次网络请求，而且如果负载均衡中心挂了，服务就会立刻不能访问。</p>
+
+<p>如果放在客户端上，客户端本地也维护一套注册中心的server列表，并且接收注册中心消息进行同步变更，每次就可以直接从本地的server列表中取出使用，但是这时的负载均衡策略就只能根据当前客户端调用server的情况来进行，比如当前客户端列表中有a，b，c三个server，可以轮询访问，从所有的客户端角度来看也是均衡的。</p>
+
+<h3>5.向第4步中选出的server发送该请求</h3>
+
+<p>Q:如何选择网络传输协议？同步/异步IO？ <br/>
+A:网络传输协议的选择，常用的一般有TCP和HTTP两种方式，TCP方式传输效率高，但是实现起来复杂，HTTP方式更通用，开发起来更简单，但是传输效率不高。
+同步的发送方式是发出请求后线程阻塞等待服务处理返回，实现起来容易，但是性能会差很多，一次请求发出后，在服务端处理逻辑时，IO阻塞没有得到充分的利用。而在异步IO的情况下，请求传输到服务端时IO不阻塞，继续处理其它的数据传输，而等服务端完成逻辑计算后再来传输，系统吞吐量会大很多。但是异步IO实现起来会比较复杂，一般我们借助netty，mina等nio通讯框架实现。</p>
+
+<h3>6.server接收到请求，反序列化并解析得到对应的服务名，方法签名，参数信息</h3>
+
+<p>Q:如果RPC支持多种序列化方式的扩展，接收的一端如何知道用哪种方式来进行反序列化？ <br/>
+A:得到二进制串之后，如果是可支持多种序列化协议的，需要我们自己做一部分的二进制串解析工作，比如我们约定第第一个字节代表选择序列化的方式，收到二进制串后先读出这个字节，选择对应的反序列化协议解析后面的字节。</p>
+
+<h3>7.server根据调用信息找到真正的业务服务实例，调用业务服务该方法</h3>
+
+<p>Q:如何根据服务名，函数参数找到对应的服务实例？ <br/>
+A:一般的应用都会用spring来管理，比如像服务中调用服务的service，让spring来管理，组装完成之后再返回使用起来非常方便，所以我们要根据服务名从spring中找到对应的bean，这里需要借助反射从服务名到class的转换，然后同样借助反射完成方法的调用。</p>
+
+<h3>8.把方法的返回值序列化，构造返回response</h3>
+
+<p>序列化时也要同6中所述，把序列化方式按照同样的规则写在二进制串中。</p>
+
+<h3>9.把response传回给client</h3>
+
+<p>对应步骤5中选择的网络协议及通讯方式实现</p>
+
+<h3>10.client接收并反序列化response，得到服务处理结果，返回给步骤1中调用的地方</h3>
+
+<p>Q:如果是异步调用，如何让客户端在调用时同步得到结果？ <br/>
+A:这里涉及到一个异步转同步的问题，客户端在发出请求后，可以让当前线程等待在一个锁上，并把锁对象放在以该请求id为key的map中，而收到返回的response的回调时，根据reponse中的之前的请求Id从内存中的这个map中拿到这个锁，唤醒客户端线程，继续取走并返回的reponse。</p>
+
+<h2>3.启动流程</h2>
+
+<p>1.client在启动时需要从服务注册中心同步自己关心的服务的地址列表，并在服务列表发生变化时更新列表。
+2.server在启动时需要向服务注册中心注册自己能够提供服务的地址和端口。
+3.监控系统定时向server发送心跳请求来确认server的可用性，如果不可用通知注册中心踢出列表，重试可用后再添加等。</p>
+
+<p>下一篇文章我们将详细分析并实现RPC框架的主流程，源码会放在git上供大家参考，如果有问题，欢迎一起讨论。</p>
+]]></content>
+  </entry>
+  
+</feed>

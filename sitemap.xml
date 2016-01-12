@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.sitemaps.org/schemas/sitemap/0.9 http://www.sitemaps.org/schemas/sitemap/0.9/sitemap.xsd" xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong/</loc>
+    <lastmod>2016-01-06T22:05:15+08:00</lastmod>
+  </url>
+  <url>
     <loc>http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/</loc>
     <lastmod>2015-12-10T10:53:30+08:00</lastmod>
   </url>
@@ -18,6 +22,6 @@
     <loc>http://zxcpro.github.io/blog/categories/xi-tong-she-ji/</loc>
   </url>
   <url>
-    <loc>http://zxcpro.github.io/blog/categories/rpc/</loc>
+    <loc>http://zxcpro.github.io/blog/categories/zhong-jian-jian-rpc/</loc>
   </url>
 </urlset>
