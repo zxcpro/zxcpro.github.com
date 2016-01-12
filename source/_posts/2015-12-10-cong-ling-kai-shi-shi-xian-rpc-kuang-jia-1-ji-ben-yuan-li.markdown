@@ -3,7 +3,7 @@ layout: post
 title: "从零开始实现RPC框架--(1)基本原理"
 date: 2015-12-10 10:53:30 +0800
 comments: true
-categories: rpc
+categories: 中间件,rpc
 ---
 #一.RPC概述
 RPC即是远程过程调用(Remote Procedure Call)，允许一台计算机调用另一台计算机上的程序得到结果，而代码中不需要做额外的编程，就像在本地调用一样。
