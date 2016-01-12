@@ -122,10 +122,8 @@ public class ServiceProxyBeanFactory {
 在服务端，我们有接口HelloService及其实现类HelloServiceImpl，要保证在rpc请求到来时能找到要请求服务对应的实现逻辑，就需要在服务启动之时在内存中维护好这个映射。
 
 还是借助spring，我们来定义这些bean
-```xml
-<!-- service实现类的bean -->
+```
 <bean id="helloService" class="org.zxc.zing.demo.service.impl.HelloServiceImpl" />
-<!-- service映射bean-->
 <bean class="org.zxc.zing.server.remote.RemoteServiceBean" init-method="init">
   <property name="serviceName" value="org.zxc.zing.demo.api.HelloService"/>
     <property name="serviceImpl" ref="helloService"/>
