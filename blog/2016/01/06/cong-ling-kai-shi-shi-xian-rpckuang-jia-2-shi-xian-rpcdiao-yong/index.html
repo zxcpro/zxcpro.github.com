@@ -7,7 +7,7 @@
 	<meta name="author" content="xuanchen.zhao">
 
 	
-	<meta name="description" content="前言 在上一篇文章"从零开始实现RPC框架&ndash;(1)基本原理&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。
+	<meta name="description" content="在上一篇文章"从零开始实现RPC框架&ndash;(1)基本原理&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。
 之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（项目链接），大家如果感兴趣可以star一下， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
@@ -76,16 +76,13 @@
 	
 	<div id="content" class="inner"><article class="post">
 	<h2 class="title">从零开始实现RPC框架&#8211;(2)实现RPC调用</h2>
-	<div class="entry-content"><h1>前言</h1>
-
-<p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
-之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。</p>
+	<div class="entry-content"><blockquote><p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
+之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。</p></blockquote>
 
 <!--more-->
 
 
-<p> <br/>
-这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p>
+<blockquote><p>这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p></blockquote>
 
 <h1>PRC调用的实现</h1>
 
