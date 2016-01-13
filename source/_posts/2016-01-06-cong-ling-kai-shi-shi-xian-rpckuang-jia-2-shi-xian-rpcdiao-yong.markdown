@@ -5,10 +5,9 @@ date: 2016-01-06 22:05:15 +0800
 comments: true
 categories: 中间件,rpc
 ---
-#前言
-
 在上一篇文章"[从零开始实现RPC框架--(1)基本原理][previous]"中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。  
-之后我实现了RPC框架的基础功能--客户端和服务端之间的调用，代码已经上传至github（[项目链接][project]）。    
+之后我实现了RPC框架的基础功能--客户端和服务端之间的调用，代码已经上传至github（[项目链接][project]），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。   
+<!--more-->
 这个版本tag名为"getting-through"，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。
 
 #PRC调用的实现
@@ -498,6 +497,10 @@ public class NettyClientHandler extends SimpleChannelInboundHandler<RemoteRespon
 #总结
 这个版本主要目标是实现RPC框架的联通，演示其中一些关键点的实现，其中很多地方有优化的空间，比如客户端连接可以重用，服务端业务逻辑在新的线程池中执行，还有下一次会实现的服务注册中心功能等，之后会逐步进行完善。
 如果对大家对文章有任何疑问或建议，欢迎指正，共同讨论。
+
+> 文章欢迎转载，转载时请保留作者与原文链接  
+> 作者：赵轩辰   
+> 本文原文地址：<http://zxcpro.github.io{{ page.url }}>
 
 [previous]:http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/
 [project]:https://github.com/zxcpro/zing
