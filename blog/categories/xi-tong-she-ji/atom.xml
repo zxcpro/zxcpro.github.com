@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 系统设计 | xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/blog/categories/xi-tong-she-ji/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-01-13T21:55:19+08:00</updated>
+  <updated>2016-01-13T21:58:25+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -195,6 +195,10 @@
 memcached缓存是否可抢的状态，挡掉活动开始后到结束状态的活动查询请求
 redis队列挡掉了活动进行中，过量的秒杀请求
 到最后只留下了秒杀商品数量级的请求到数据库中。</p>
+
+<blockquote><p>文章欢迎转载，转载时请保留作者与原文链接<br/>
+作者：赵轩辰 <br/>
+本文原文地址：&lt;<a href="http://zxcpro.github.io">http://zxcpro.github.io</a>/blog/categories/xi-tong-she-ji/atom.xml></p></blockquote>
 ]]></content>
   </entry>
   
