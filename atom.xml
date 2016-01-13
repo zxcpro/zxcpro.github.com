@@ -4,7 +4,7 @@
   <title><![CDATA[xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-01-13T21:11:33+08:00</updated>
+  <updated>2016-01-13T21:16:14+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -18,13 +18,13 @@
     <link href="http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong/"/>
     <updated>2016-01-06T22:05:15+08:00</updated>
     <id>http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong</id>
-    <content type="html"><![CDATA[<blockquote><p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
-之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。</p></blockquote>
+    <content type="html"><![CDATA[<p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
+之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。</p>
 
 <!--more-->
 
 
-<blockquote><p>这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p></blockquote>
+<p>这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p>
 
 <h1>PRC调用的实现</h1>
 
@@ -889,6 +889,9 @@ netty是一个nio的通讯框架，屏蔽了很多的底层网络细节，api封
 
 <p>现在互联网应用的量级越来越大，单台计算机的能力有限，需要借助可扩展的计算机集群来完成，分布式的应用可以借助rpc来完成机器之间的调用。</p>
 
+<!--more-->
+
+
 <h1>二.RPC框架原理</h1>
 
 <p>在RPC框架中主要有两个角色，client和server。一台服务器作为server向外提供服务，同时其内部又调用了其它的服务，这时它也是另外一个服务的client。</p>
@@ -996,6 +999,9 @@ A:这里涉及到一个异步转同步的问题，客户端在发出请求后，
     <id>http://zxcpro.github.io/blog/2015/07/27/gao-bing-fa-miao-sha-xi-tong-de-she-ji</id>
     <content type="html"><![CDATA[<p>一个大型网站应用一般都是从最初小规模网站甚至是单机应用发展而来的，为了让系统能够支持足够大的业务量，从前端到后端也采用了各种各样技术，前端静态资源压缩整合、使用CDN、分布式SOA架构、缓存、数据库加索引、读写分离等等。
 这些技术是高并发系统所必须的，但是今天先不细说，而先谈谈在这些架构既定的情况下，一些高并发业务/接口实现时应该注意的原则，以及通过工作中遇到的一个6万QPS的秒杀活动，来介绍一下秒杀业务的特点以及如何优化。</p>
+
+<!--more-->
+
 
 <h1>高并发系统设计原则</h1>
 

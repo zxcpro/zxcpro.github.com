@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 中间件,rpc | xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/blog/categories/zhong-jian-jian-rpc/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-01-13T21:11:33+08:00</updated>
+  <updated>2016-01-13T21:16:14+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -18,13 +18,13 @@
     <link href="http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong/"/>
     <updated>2016-01-06T22:05:15+08:00</updated>
     <id>http://zxcpro.github.io/blog/2016/01/06/cong-ling-kai-shi-shi-xian-rpckuang-jia-2-shi-xian-rpcdiao-yong</id>
-    <content type="html"><![CDATA[<blockquote><p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
-之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。</p></blockquote>
+    <content type="html"><![CDATA[<p>在上一篇文章&#8221;<a href="http://zxcpro.github.io/blog/2015/12/10/cong-ling-kai-shi-shi-xian-rpc-kuang-jia-1-ji-ben-yuan-li/">从零开始实现RPC框架&ndash;(1)基本原理</a>&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。<br/>
+之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（<a href="https://github.com/zxcpro/zing">项目链接</a>），大家如果感兴趣可以star一下，今天这篇主要结合代码说说如何实现RPC框架的调用功能。</p>
 
 <!--more-->
 
 
-<blockquote><p>这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p></blockquote>
+<p>这个版本tag名为&#8221;getting-through&#8221;，目前客户端选择服务端地址时暂时以常量形式设置，服务注册发现和负载均衡的特性会在下一个版本完成，本次主要功能放在客户端和服务端之间的调用过程的实现上。</p>
 
 <h1>PRC调用的实现</h1>
 
@@ -814,6 +814,9 @@ protected void channelRead0(ChannelHandlerContext ctx, RemoteResponse msg) throw
 <p>RPC即是远程过程调用(Remote Procedure Call)，允许一台计算机调用另一台计算机上的程序得到结果，而代码中不需要做额外的编程，就像在本地调用一样。</p>
 
 <p>现在互联网应用的量级越来越大，单台计算机的能力有限，需要借助可扩展的计算机集群来完成，分布式的应用可以借助rpc来完成机器之间的调用。</p>
+
+<!--more-->
+
 
 <h1>二.RPC框架原理</h1>
 

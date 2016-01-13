@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 系统设计 | xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/blog/categories/xi-tong-she-ji/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-01-13T21:11:33+08:00</updated>
+  <updated>2016-01-13T21:16:14+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -20,6 +20,9 @@
     <id>http://zxcpro.github.io/blog/2015/07/27/gao-bing-fa-miao-sha-xi-tong-de-she-ji</id>
     <content type="html"><![CDATA[<p>一个大型网站应用一般都是从最初小规模网站甚至是单机应用发展而来的，为了让系统能够支持足够大的业务量，从前端到后端也采用了各种各样技术，前端静态资源压缩整合、使用CDN、分布式SOA架构、缓存、数据库加索引、读写分离等等。
 这些技术是高并发系统所必须的，但是今天先不细说，而先谈谈在这些架构既定的情况下，一些高并发业务/接口实现时应该注意的原则，以及通过工作中遇到的一个6万QPS的秒杀活动，来介绍一下秒杀业务的特点以及如何优化。</p>
+
+<!--more-->
+
 
 <h1>高并发系统设计原则</h1>
 
