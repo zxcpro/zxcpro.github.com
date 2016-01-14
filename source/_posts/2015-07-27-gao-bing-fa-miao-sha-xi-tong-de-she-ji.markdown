@@ -179,7 +179,7 @@ redis队列挡掉了活动进行中，过量的秒杀请求
 > 本文原文地址：<http://zxcpro.github.io{{ page.url }}>
 
 
-[各阶段流量图]:/assets/img/seckill/requestflow.png
+[各阶段流量图]:/assets/img/seckill/requestflow.jpeg
 [varnish作用机制]:/assets/img/seckill/varnish.jpeg
 [秒杀流程图]:/assets/img/seckill/seckill.png
 [排队秒杀流程图]:/assets/img/seckill/newseckill.png
