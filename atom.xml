@@ -4,7 +4,7 @@
   <title><![CDATA[xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-02-04T16:41:31+08:00</updated>
+  <updated>2016-02-04T16:43:39+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -180,7 +180,7 @@
 <h1>总结</h1>
 
 <p>至此，一个rpc框架的基本功能就已经实现了，这个版本的tag是&#8221;registry-center&#8221;。
-一个强大的rpc框架还需要一些诸如服务监控、限流、隔离、降级，心跳检测等，之后又需要会逐步完善。如果大家有什么问题和建议，欢迎一起讨论。</p>
+一个强大的rpc框架还需要一些诸如服务监控、限流、隔离、降级，心跳检测等，之后有需要会逐步完善。如果大家有什么问题和建议，欢迎一起讨论。</p>
 
 <blockquote><p>文章欢迎转载，转载时请保留作者与原文链接<br/>
 作者：赵轩辰 <br/>
