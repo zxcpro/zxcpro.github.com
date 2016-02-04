@@ -7,8 +7,7 @@
 	<meta name="author" content="xuanchen.zhao">
 
 	
-	<meta name="description" content="在上一篇文章"从零开始实现RPC框架&ndash;(1)基本原理&ldquo;中，大致讲述了RPC框架的原理、可能遇到的问题及一些解决的方案。
-之后我实现了RPC框架的基础功能&ndash;客户端和服务端之间的调用，代码已经上传至github（项目链接），大家如果感兴趣可以star一下， &hellip;">
+	<meta name="description" content="上一篇文章中，我们实现了RPC框架客户端和服务端的通信，可以完成一次完整的RPC调用。 但是在生产环境中，服务集群会经常进行上下线和扩容的变动，显然在客户端配置服务端地址的方式是不适用的。 我们需要的是一个注册中心组件来维护服务器列表，并且在服务器上下线、扩容的时候同步变更， &hellip;">
 	
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
@@ -75,6 +74,48 @@
 		
 	
 	<div id="content" class="inner">
+
+
+    <article class="post">
+	<h2 class="title">
+		
+		<a href="/blog/2016/02/03/cong-ling-kai-shi-shi-xian-rpckuang-jia-3-fu-wu-zhu-ce-zhong-xin/">
+		
+			从零开始实现RPC框架&#8211;(3)服务注册中心</a>
+	</h2>
+	<div class="entry-content">
+		<p>上一篇文章中，我们实现了RPC框架客户端和服务端的通信，可以完成一次完整的RPC调用。 <br/>
+但是在生产环境中，服务集群会经常进行上下线和扩容的变动，显然在客户端配置服务端地址的方式是不适用的。 <br/>
+我们需要的是一个注册中心组件来维护服务器列表，并且在服务器上下线、扩容的时候同步变更，定时通知客户端更新列表，来看看该如何实现。</p>
+
+
+		
+		<a href="/blog/2016/02/03/cong-ling-kai-shi-shi-xian-rpckuang-jia-3-fu-wu-zhu-ce-zhong-xin/" class="more-link">Read more &rarr;</a>
+	</div>
+
+
+<div class="meta">
+	<div class="date">
+
+
+
+
+
+
+
+
+  
+
+
+<time datetime="2016-02-03T17:03:39+08:00" pubdate data-updated="true"></time></div>
+	<div class="tags">
+
+</div>
+	
+	<div class="comments"><a href="/blog/2016/02/03/cong-ling-kai-shi-shi-xian-rpckuang-jia-3-fu-wu-zhu-ce-zhong-xin/#disqus_thread">Comments</a></div>
+	
+</div>
+</article>
 
 
     <article class="post">
