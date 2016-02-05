@@ -4,7 +4,7 @@
   <title><![CDATA[xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-02-05T10:55:38+08:00</updated>
+  <updated>2016-02-05T11:12:33+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -118,7 +118,7 @@ zookeeper是Apache下的一个分布式协调框架，它的特点如下： <br/
 </span></code></pre></td></tr></table></div></figure>
 
 
-<p>底层调用了curator拉取了/zing/service/org.zxc.zing.demo.api.DemoService下的所有子节点，转换成service provider list存储在内存中，为了保证线程安全，这里用一个以serviceName为key, Set<ProviderInfo>为value的ConcurrentHashMap来存储，每次列表发生变动时，生成新的set替换掉map中的值。</p>
+<p>底层调用了curator拉取了/zing/service/org.zxc.zing.demo.api.DemoService下的所有子节点，转换成service provider list存储在内存中，为了保证线程安全，这里用一个以serviceName为key, 包含对应service provider的set为value的ConcurrentHashMap来存储，每次列表发生变动时，生成新的set替换掉map中的值。</p>
 
 <figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
 </pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">List</span><span class="o">&lt;</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">stringList</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="na">getChildren</span><span class="o">().</span><span class="na">watched</span><span class="o">().</span><span class="na">forPath</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">format</span><span class="o">(</span><span class="n">Constants</span><span class="o">.</span><span class="na">SERVICE_ZK_PATH_FORMAT</span><span class="o">,</span> <span class="n">serviceName</span><span class="o">));</span>

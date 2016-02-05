@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 中间件,rpc | xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/blog/categories/zhong-jian-jian-rpc/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-02-05T10:55:38+08:00</updated>
+  <updated>2016-02-05T11:12:33+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -92,7 +92,7 @@ ServiceProviderManager.initServerListOfService(serviceName);
 return Reflection.newProxy(serviceClass, new ServiceProxy(serviceName));
 </code></pre>
 
-<p>底层调用了curator拉取了/zing/service/org.zxc.zing.demo.api.DemoService下的所有子节点，转换成service provider list存储在内存中，为了保证线程安全，这里用一个以serviceName为key, Set<ProviderInfo>为value的ConcurrentHashMap来存储，每次列表发生变动时，生成新的set替换掉map中的值。</p>
+<p>底层调用了curator拉取了/zing/service/org.zxc.zing.demo.api.DemoService下的所有子节点，转换成service provider list存储在内存中，为了保证线程安全，这里用一个以serviceName为key, 包含对应service provider的set为value的ConcurrentHashMap来存储，每次列表发生变动时，生成新的set替换掉map中的值。</p>
 
 <pre><code class="java">List&lt;String&gt; stringList = client.getChildren().watched().forPath(String.format(Constants.SERVICE_ZK_PATH_FORMAT, serviceName));
 </code></pre>
