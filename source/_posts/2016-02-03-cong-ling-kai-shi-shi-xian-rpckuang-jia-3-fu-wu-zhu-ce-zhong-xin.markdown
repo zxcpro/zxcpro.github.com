@@ -11,14 +11,15 @@ categories: 中间件,rpc
 <!--more-->
 
 #概述
-关于注册中心，在第一章中提到过：注册中心必须保证高可用，不能由于一两台机器挂掉就变得不可用，也就是说需要集群冗余的支持，幸运的是并不用我们自己来实现这样的组件，业界已经有成熟的框架zookeeper，其高可用性，支持集群冗余，订阅/发布的功能都是注册中心所需要的。
+关于注册中心，在第一章中提到过：注册中心必须保证高可用，不能由于一两台机器挂掉就变得不可用，也就是说需要集群冗余的支持，幸运的是我们不需要从新开始造轮子，业界有成熟的zookeeper框架可以为我们提供稳定的支持。
+zookeeper是Apache下的一个分布式协调框架，它的特点如下：   
+*   它有一套选举机制可以保证在zookeeper集群只要有一半以上机器可用就可以正常提供服务，可用性非常高   
+*   其数据存储在内存当中，读写速度很快   
+*   zookeeper使用起来很像一个文件系统，其节点Znode就像是文件系统中的文件夹和文件，节点的路径很像文件的路径比如/root/node1/node1_1，一个Znode下有自己的数据，同时还可以有子节点   
+*   订阅者/发布者 当客户端连接zookeeper并注册了所关注的节点/路径，在节点/路径发生变化时，客户端会收到一个通知   
+*   可以用来保存分布式应用的一些状态，实现统一的配置中心，分布式锁等   
+综上，其高可用性，支持集群冗余，订阅/发布的功能都是注册中心所需要的。
 
-zookeeper是Apache下的一个分布式协调框架，它的特点如下：
-*  它有一套选举机制可以保证在zookeeper集群只要有一半以上机器可用就可以正常提供服务，可用性非常高
-*  其数据存储在内存当中，读写速度很快
-*  zookeeper使用起来很像一个文件系统，其节点Znode就像是文件系统中的文件夹和文件，节点的路径很像文件的路径比如/root/node1/node1_1，一个Znode下有自己的数据，同时还可以有子节点
-*  订阅者/发布者 当客户端连接zookeeper并注册了所关注的节点/路径，在节点/路径发生变化时，客户端会收到一个通知
-*  可以用来保存分布式应用的一些状态，实现统一的配置中心，分布式锁等
 
 #服务注册中心的实现
 再说回来我们RPC框架的注册中心，其主要功能是：   
@@ -77,7 +78,7 @@ ServiceProviderManager.initServerListOfService(serviceName);
 return Reflection.newProxy(serviceClass, new ServiceProxy(serviceName));
 ```
 
-底层调用了curator拉取了/zing/service/org.zxc.zing.demo.api.DemoService下的所有子节点，转换成service provider list存储在内存中。   
+底层调用了curator拉取了/zing/service/org.zxc.zing.demo.api.DemoService下的所有子节点，转换成service provider list存储在内存中，为了保证线程安全，这里用一个以serviceName为key, 包含对应service provider的set为value的ConcurrentHashMap来存储，每次列表发生变动时，生成新的set替换掉map中的值。   
 
 ```java
 List<String> stringList = client.getChildren().watched().forPath(String.format(Constants.SERVICE_ZK_PATH_FORMAT, serviceName));
@@ -116,7 +117,7 @@ ProviderStateListenerManager.getInstance().onProviderChange(serviceName);
 
 #总结
 至此，一个rpc框架的基本功能就已经实现了，这个版本的tag是"registry-center"。
-一个强大的rpc框架还需要一些诸如服务监控、限流、隔离、降级，心跳检测等，之后有需要会逐步完善。如果大家有什么问题和建议，欢迎一起讨论。
+一个强大的rpc框架还需要一些诸如服务监控、限流、隔离、降级、心跳检测等，之后有需要会逐步完善。如果大家有什么问题和建议，欢迎一起讨论。
 
 
 > 文章欢迎转载，转载时请保留作者与原文链接  
