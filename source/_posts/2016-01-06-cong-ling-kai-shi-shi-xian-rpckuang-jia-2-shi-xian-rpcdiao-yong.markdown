@@ -436,19 +436,17 @@ public class ResponseFuture{
     private boolean completed = false;
     private Object result;
 
-    public Object get() {
+    public synchronized Object get() {
         //如果未完成时来get，就会一直wait下去
-        synchronized(this){
-            //直到set被调用，标记Future为完成，线程被唤醒，返回result
-            while(!completed){
-                this.wait();
-            }
-        return result;
+        //直到set被调用，标记Future为完成，线程被唤醒，返回result
+        while(!completed){
+            this.wait();
         }
+        return result;
     }
     
     //当接收到返回的response时，设置任务完成，通知挂起的线程
-    public void set(Object result) {
+    public synchronized void set(Object result) {
         this.completed = true;
         this.result = result;
         this.notifyAll();
