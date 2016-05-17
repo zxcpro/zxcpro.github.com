@@ -834,26 +834,22 @@ netty是一个nio的通讯框架，屏蔽了很多的底层网络细节，api封
 <span class='line-number'>19</span>
 <span class='line-number'>20</span>
 <span class='line-number'>21</span>
-<span class='line-number'>22</span>
-<span class='line-number'>23</span>
 </pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResponseFuture</span><span class="o">{</span>
 </span><span class='line'>    <span class="c1">//默认future没有完成，result为空</span>
 </span><span class='line'>    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">completed</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
 </span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">result</span><span class="o">;</span>
 </span><span class='line'>
-</span><span class='line'>    <span class="kd">public</span> <span class="n">Object</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">synchronized</span> <span class="n">Object</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
 </span><span class='line'>        <span class="c1">//如果未完成时来get，就会一直wait下去</span>
-</span><span class='line'>        <span class="kd">synchronized</span><span class="o">(</span><span class="k">this</span><span class="o">){</span>
-</span><span class='line'>            <span class="c1">//直到set被调用，标记Future为完成，线程被唤醒，返回result</span>
-</span><span class='line'>            <span class="k">while</span><span class="o">(!</span><span class="n">completed</span><span class="o">){</span>
-</span><span class='line'>                <span class="k">this</span><span class="o">.</span><span class="na">wait</span><span class="o">();</span>
-</span><span class='line'>            <span class="o">}</span>
-</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>        <span class="c1">//直到set被调用，标记Future为完成，线程被唤醒，返回result</span>
+</span><span class='line'>        <span class="k">while</span><span class="o">(!</span><span class="n">completed</span><span class="o">){</span>
+</span><span class='line'>            <span class="k">this</span><span class="o">.</span><span class="na">wait</span><span class="o">();</span>
 </span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
 </span><span class='line'>    <span class="o">}</span>
 </span><span class='line'>
 </span><span class='line'>    <span class="c1">//当接收到返回的response时，设置任务完成，通知挂起的线程</span>
-</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">set</span><span class="o">(</span><span class="n">Object</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">void</span> <span class="nf">set</span><span class="o">(</span><span class="n">Object</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
 </span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">completed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
 </span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">;</span>
 </span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">notifyAll</span><span class="o">();</span>

@@ -4,7 +4,7 @@
   <title><![CDATA[Category: 中间件,rpc | xuanchen's Blog]]></title>
   <link href="http://zxcpro.github.io/blog/categories/zhong-jian-jian-rpc/atom.xml" rel="self"/>
   <link href="http://zxcpro.github.io/"/>
-  <updated>2016-02-05T11:19:16+08:00</updated>
+  <updated>2016-05-17T23:59:47+08:00</updated>
   <id>http://zxcpro.github.io/</id>
   <author>
     <name><![CDATA[xuanchen.zhao]]></name>
@@ -852,26 +852,22 @@ Serializer.serialize中使用hession完成Object到字节流的转换，而Encod
 <span class='line-number'>21</span>
 <span class='line-number'>22</span>
 <span class='line-number'>23</span>
-<span class='line-number'>24</span>
-<span class='line-number'>25</span>
 </pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">ResponseFuture</span><span class="o">{</span>
 </span><span class='line'>    <span class="c1">//默认future没有完成，result为空</span>
 </span><span class='line'>    <span class="kd">private</span> <span class="kt">boolean</span> <span class="n">completed</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
 </span><span class='line'>    <span class="kd">private</span> <span class="n">Object</span> <span class="n">result</span><span class="o">;&lt;/</span><span class="n">p</span><span class="o">&gt;</span>
 </span><span class='line'>
-</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">public</span> <span class="n">Object</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'><span class="o">&lt;</span><span class="n">pre</span><span class="o">&gt;&lt;</span><span class="n">code</span><span class="o">&gt;</span><span class="kd">public</span> <span class="kd">synchronized</span> <span class="n">Object</span> <span class="nf">get</span><span class="o">()</span> <span class="o">{</span>
 </span><span class='line'>    <span class="c1">//如果未完成时来get，就会一直wait下去</span>
-</span><span class='line'>    <span class="kd">synchronized</span><span class="o">(</span><span class="k">this</span><span class="o">){</span>
-</span><span class='line'>        <span class="c1">//直到set被调用，标记Future为完成，线程被唤醒，返回result</span>
-</span><span class='line'>        <span class="k">while</span><span class="o">(!</span><span class="n">completed</span><span class="o">){</span>
-</span><span class='line'>            <span class="k">this</span><span class="o">.</span><span class="na">wait</span><span class="o">();</span>
-</span><span class='line'>        <span class="o">}</span>
-</span><span class='line'>    <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
+</span><span class='line'>    <span class="c1">//直到set被调用，标记Future为完成，线程被唤醒，返回result</span>
+</span><span class='line'>    <span class="k">while</span><span class="o">(!</span><span class="n">completed</span><span class="o">){</span>
+</span><span class='line'>        <span class="k">this</span><span class="o">.</span><span class="na">wait</span><span class="o">();</span>
 </span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">result</span><span class="o">;</span>
 </span><span class='line'><span class="o">}</span>
 </span><span class='line'>
 </span><span class='line'><span class="c1">//当接收到返回的response时，设置任务完成，通知挂起的线程</span>
-</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">set</span><span class="o">(</span><span class="n">Object</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'><span class="kd">public</span> <span class="kd">synchronized</span> <span class="kt">void</span> <span class="nf">set</span><span class="o">(</span><span class="n">Object</span> <span class="n">result</span><span class="o">)</span> <span class="o">{</span>
 </span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">completed</span> <span class="o">=</span> <span class="kc">true</span><span class="o">;</span>
 </span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">result</span> <span class="o">=</span> <span class="n">result</span><span class="o">;</span>
 </span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">notifyAll</span><span class="o">();</span>
@@ -1012,7 +1008,7 @@ protected void channelRead0(ChannelHandlerContext ctx, RemoteResponse msg) throw
 
 <p>Q:如何选择网络传输协议？同步/异步IO？ <br/>
 A:网络传输协议的选择，常用的一般有TCP和HTTP两种方式，TCP方式传输效率高，但是实现起来复杂，HTTP方式更通用，开发起来更简单，但是传输效率不高。
-同步的发送方式是发出请求后线程阻塞等待服务处理返回，实现起来容易，但是性能会差很多，一次请求发出后，在服务端处理逻辑时，IO阻塞没有得到充分的利用。而在异步IO的情况下，请求传输到服务端时IO不阻塞，继续处理其它的数据传输，而等服务端完成逻辑计算后再来传输，系统吞吐量会大很多。但是异步IO实现起来会比较复杂，一般我们借助netty，mina等nio通讯框架实现。</p>
+同步的发送方式是发出请求后线程阻塞等待服务处理返回，实现起来容易，但是性能会差很多，一次请求发送时，阻塞IO会占有线程，不能使CPU得到充分的利用。而在异步IO的情况下，请求网络传输不阻塞，CPU可以处理其它的线程，而等传输完成后再来计算，系统吞吐量会大很多。但是异步IO实现起来会比较复杂，一般我们借助netty，mina等nio通讯框架实现。</p>
 
 <h3>6.server接收到请求，反序列化并解析得到对应的服务名，方法签名，参数信息</h3>
 
